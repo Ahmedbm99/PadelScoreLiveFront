@@ -91,21 +91,32 @@ const setsScore = finishedSets.reduce(
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="uppercase tracking-wide">Sets</span>
-           <div className="flex items-center gap-3">
-            <span className="rounded-md bg-slate-800 px-2 py-0.5 text-l font-semibold text-slate-100 tabular-nums">
-              {displaySets.length
-                ? displaySets.map((s, idx) => (
-                    <span key={idx}>
-                      {idx > 0 && ' | '} {s.team1} - {s.team2}
-                    </span>
-                  ))
-                : '--'}
-            </span>
+          <div className="flex items-center gap-3">
+  {/* Sets */}
+  <span className="rounded-md bg-slate-800 px-2 py-0.5 text-l font-semibold text-slate-100 tabular-nums">
+    {displaySets.length
+      ? displaySets.map((s, idx) => (
+          <span key={idx}>
+            {idx > 0 && ' | '} {s.team1} - {s.team2}
+          </span>
+        ))
+      : '--'}
+  </span>
 
-            <span className="rounded-md bg-accent/80 px-2 py-0.5 text-3xl ml-28 font-mono text-slate-900 tabular-nums">
-              {setsScore.team1} - {setsScore.team2}
-            </span>
-          </div>
+  {/* Score */}
+{/* Score sets pour cette équipe */}
+<div className="flex items-center gap-4 ml-60">
+  <div className="flex flex-col items-center rounded-md bg-accent/80 px-4 py-2">
+    <span className="text-3xl font-normal text-slate-900 tabular-nums">
+      {team === 'team1' ? setsScore.team1 : setsScore.team2}
+      
+    </span>
+  </div>
+  
+</div>
+
+</div>
+
 
             
           </div>

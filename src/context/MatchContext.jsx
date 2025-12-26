@@ -86,7 +86,7 @@ export function MatchProvider({ children }) {
     };
 
     poll();
-    pollRef.current = setInterval(poll, 1000); // 1s pour le superviseur (suffisant)
+    pollRef.current = setInterval(poll, 500); // 1s pour le superviseur (suffisant)
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
