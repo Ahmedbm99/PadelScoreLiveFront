@@ -7,7 +7,6 @@ import SpectatorPage from './pages/SpectatorPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Countdown from './pages/Countdown.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
 function App() {
   return (
     <AuthProvider>
