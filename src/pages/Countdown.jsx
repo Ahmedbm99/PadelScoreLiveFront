@@ -7,7 +7,7 @@ export default function Countdown() {
 
   useEffect(() => {
     const targetTime = new Date();
-    targetTime.setHours(18, 0, 0, 0); // 18:00
+    targetTime.setHours(15, 0, 0, 0); // 15:00
 
     const interval = setInterval(() => {
       const now = new Date();
