@@ -13,7 +13,7 @@ function Header() {
     <header className="w-full bg-slate-950 border-b border-slate-800">
       <div className="mx-auto max-w-6xl flex items-center justify-between px-28">
         <div className="flex items-center">
-          <img src="/Black png.png" alt="Padel Du Coeur Logo" className="h-40 w-40" />
+          <img src="/PadelScoreLiveFront/Black png.png" alt="Padel Du Coeur Logo" className="h-40 w-40" />
           <div>
             <h1 className="text-5xl font-extrabold tracking-tight">Padel Du Coeur</h1>
             <p className="text-2xl font-thin text-slate-400">Tableau de score temps réel</p>
