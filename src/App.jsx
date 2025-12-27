@@ -5,7 +5,7 @@ import LoginPage from './pages/LoginPage.jsx';
 import ScorePage from './pages/ScorePage.jsx';
 import SpectatorPage from './pages/SpectatorPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
+import ProtectedRoute from './routes/ProtectedRoute.jsx';
 import Countdown from './pages/Countdown.jsx';
 function App() {
   return (
