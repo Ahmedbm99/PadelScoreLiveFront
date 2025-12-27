@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://padel-score-live-back-kxq62c4h8-ahmedbm99s-projects.vercel.app';
+const API_BASE_URL = 'https://padel-score-live-back-dibevvat8-ahmedbm99s-projects.vercel.app';
 
 export const apiClient = {
   async request(path, method = 'GET', body, token) {
