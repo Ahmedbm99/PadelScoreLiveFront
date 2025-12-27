@@ -1,7 +1,7 @@
 {
   "name": "padel-score-frontend",
   "version": "0.0.1",
-    "homepage": "https://github.com/Ahmedbm99/PadelScoreLiveFront.git",
+    "homepage": "https://github.com/Ahmedbm99/PadelScoreLiveFront",
 
   "private": true,
   "scripts": {
