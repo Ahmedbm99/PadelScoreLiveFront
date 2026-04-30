@@ -20,7 +20,7 @@ function CourtSelector() {
           loadMatch(user.terrain_id);
         }
       } catch (e) {
-        setError(e.message || 'Erreur chargement terrains');
+        setError(e.message || 'Unable to load courts');
       }
     };
     fetchTerrains();
@@ -36,30 +36,26 @@ function CourtSelector() {
   };
 
   return (
-    <section className="max-w-md">
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-xs text-slate-200">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-medium">Terrain</span>
-          <select
-            value={terrainId || ''}
-            onChange={handleChange}
-            className="min-w-[140px] rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            disabled={user.role === 'supervisor' && user.terrain_id}
-          >
-            <option value="">Sélectionner</option>
-            {terrains.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        {error && <p className="mt-1 text-[11px] text-red-400">{error}</p>}
+    <section className="max-w-xl">
+      <div className="rounded-2xl border border-slate-700 bg-slate-500/75 p-3 sm:p-4">
+        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-400">Court</label>
+        <select
+          value={terrainId || ''}
+          onChange={handleChange}
+          className="min-h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+          disabled={user.role === 'supervisor' && user.terrain_id}
+        >
+          <option value="">Select court</option>
+          {terrains.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
       </div>
     </section>
   );
 }
 
 export default CourtSelector;
-
-

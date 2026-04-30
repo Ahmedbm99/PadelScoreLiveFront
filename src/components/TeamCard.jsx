@@ -1,131 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { useMatch } from '../context/MatchContext.jsx';
+import React from 'react';
 import { formatPoints } from '../services/scoreEngine.js';
 
-function TeamCard({ team, name, isEditable, highlightServing, scoreState: externalScoreState }) {
-  const matchCtx = useMatch();
-  const players = matchCtx?.players;
-  const setPlayers = matchCtx?.setPlayers;
-  const savePlayers = matchCtx?.savePlayers;
-  const scoreState = externalScoreState || matchCtx?.scoreState;
-  const [localName, setLocalName] = useState(name);
-
-  useEffect(() => {
-    setLocalName(name);
-  }, [name]);
-
-  const handleBlur = async () => {
-    if (!isEditable || !players || !setPlayers || !savePlayers) return;
-    const updated = { ...players, [team]: localName };
-    setPlayers(updated);
-    await savePlayers(updated);
-  };
-
+function TeamCard({ team, name, highlightServing, scoreState }) {
   if (!scoreState) return null;
 
   const displayScore = formatPoints(scoreState, team);
-  const finishedSets = Array.isArray(scoreState.sets) ? scoreState.sets : [];
-  const currentSet = scoreState.games || { team1: 0, team2: 0 };
-  const displaySets = [...finishedSets, currentSet];
-const setsScore = finishedSets.reduce(
-  (acc, set) => {
-    if (set.team1 > set.team2) acc.team1 += 1;
-    if (set.team2 > set.team1) acc.team2 += 1;
+  const setsWon = (scoreState.sets || []).reduce((acc, setScore) => {
+    if (setScore.team1 > setScore.team2 && team === 'team1') return acc + 1;
+    if (setScore.team2 > setScore.team1 && team === 'team2') return acc + 1;
     return acc;
-  },
-  { team1: 0, team2: 0 }
-);
+  }, 0);
 
-  const label =
-    typeof name === 'string' ? name : name?.label || `Équipe ${team === 'team1' ? '1' : '2'}`;
+  const other = team === 'team1' ? 'team2' : 'team1';
+  const currentGames = `${scoreState.games[team]}-${scoreState.games[other]}`;
+  const fallbackName = team === 'team1' ? 'Team 1' : 'Team 2';
+  const teamLabel =
+    typeof name === 'string'
+      ? name
+      : name && typeof name === 'object'
+      ? name.label || fallbackName
+      : fallbackName;
   const player1 =
-    name && typeof name === 'object' && name.player1 ? name.player1 : null;
+    name && typeof name === 'object' && name.player1 ? name.player1 : '';
   const player2 =
-    name && typeof name === 'object' && name.player2 ? name.player2 : null;
+    name && typeof name === 'object' && name.player2 ? name.player2 : '';
   const category =
-    name && typeof name === 'object' && name.category ? name.category : null;
+    name && typeof name === 'object' && name.category ? name.category : '';
 
   return (
-    <div
-      className={`relative rounded-3xl border mr px-4 py-2 shadow-sm transition ${
-        highlightServing
-          ? 'border-accent/70 bg-slate-800/80 shadow-accent/25'
-          : 'border-slate-800 bg-slate-900/60'
-      }`}
-    >
-      {highlightServing && (
-        <div className="absolute right-3 top-3 rounded-full bg-accent px-2 py-0.5 mt-16  text-[15px] font-semibold uppercase text-slate-900">
-          Service
+    <article className={`relative overflow-hidden rounded-3xl border p-4 shadow-xl sm:p-5 ${highlightServing ? 'border-emerald-200/70 bg-emerald-300/15 shadow-emerald-700/20' : 'border-white/10 bg-white/5 shadow-fuchsia-900/20'}`}>
+      <div className="pointer-events-none absolute -top-20 right-0 h-32 w-32 rounded-full bg-cyan-300/20 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-12 left-0 h-28 w-28 rounded-full bg-fuchsia-300/20 blur-2xl" />
+
+      <div className="relative flex items-center justify-between gap-3">
+        <h2 className="max-w-[70%] truncate text-lg font-semibold uppercase tracking-wide text-white">{teamLabel}</h2>
+        {highlightServing && <span className="rounded-full bg-emerald-200 px-2 py-1 text-[10px] font-bold uppercase text-slate-900">Serving</span>}
+      </div>
+
+      <div className="relative mt-3 flex items-end justify-between">
+        <p className="text-5xl font-bold leading-none text-white tabular-nums sm:text-6xl">{displayScore}</p>
+        <div className="text-right">
+          <p className="text-[11px] uppercase tracking-wide text-slate-200/80">Sets won</p>
+          <p className="text-2xl font-bold text-cyan-200 tabular-nums">{setsWon}</p>
+        </div>
+      </div>
+
+      <div className="relative mt-3 flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/35 px-3 py-2">
+        <span className="text-xs uppercase tracking-wide text-slate-200/80">Current set games</span>
+        <span className="text-lg font-semibold text-white tabular-nums">{currentGames}</span>
+      </div>
+
+      {(player1 || player2 || category) && (
+        <div className="relative mt-2 space-y-1 text-xs text-slate-200/85">
+          {player1 && <p className="truncate">{player1}</p>}
+          {player2 && <p className="truncate">{player2}</p>}
+          {category && <p className="inline-block rounded-full border border-cyan-200/30 bg-cyan-400/15 px-2 py-0.5 text-[11px] text-cyan-100">{category}</p>}
         </div>
       )}
-
-      <div className="mb-3 flex items-center justify-between gap-2">
-        {isEditable ? (
-          <input
-            value={localName}
-            onChange={(e) => setLocalName(e.target.value)}
-            onBlur={handleBlur}
-            placeholder={`Équipe ${team === 'team1' ? '1' : '2'}`}
-            className="flex-1 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm font-medium text-slate-100 placeholder:text-slate-500 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-        ) : (
-          <h2 className="text-[25px] font-medium text-slate-100">
-              {label.replace(/\s*\([^)]*\)/g, '')}
-          </h2>
-        )}
-
-        <div className="flex items-baseline gap-1">
-          <span className="text-6xl font-bold text-slate-50 tabular-nums">
-            {displayScore}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-1 text-5x text-slate-400">
-        {(player1 || player2) && (
-          <div className="flex flex-col leading-tight">
-         
-            {category && <span className="text-[17px] mb-3 text-slate-400">P-{category}</span>}
-          </div>
-        )}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="uppercase tracking-wide">Sets</span>
-          <div className="flex items-center gap-3">
-  {/* Sets */}
-  <span className="rounded-md bg-slate-800 px-2 py-0.5 text-l font-semibold text-slate-100 tabular-nums">
-    {displaySets.length
-      ? displaySets.map((s, idx) => (
-          <span key={idx}>
-            {idx > 0 && ' | '} {s.team1} - {s.team2}
-          </span>
-        ))
-      : '--'}
-  </span>
-
-  {/* Score */}
-{/* Score sets pour cette équipe */}
-<div className="flex items-center gap-4 ml-60">
-  <div className="flex flex-col items-center rounded-md bg-accent/80 px-4 py-2">
-    <span className="text-3xl font-normal text-slate-900 tabular-nums">
-      {team === 'team1' ? setsScore.team1 : setsScore.team2}
-      
-    </span>
-  </div>
-  
-</div>
-
-</div>
-
-
-            
-          </div>
-        </div>
-      </div>
-    </div>
+    </article>
   );
 }
 
 export default TeamCard;
-
-

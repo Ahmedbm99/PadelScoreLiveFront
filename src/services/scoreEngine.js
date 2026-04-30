@@ -1,50 +1,196 @@
+const TEAMS = ['team1', 'team2'];
+const POINT_TABLE = [0, 15, 30, 40];
+
+function otherTeam(team) {
+  return team === 'team1' ? 'team2' : 'team1';
+}
+
+function clampInt(value, min = 0, max = Number.MAX_SAFE_INTEGER) {
+  const n = Number.isFinite(Number(value)) ? Math.trunc(Number(value)) : min;
+  return Math.min(max, Math.max(min, n));
+}
+
 export function createInitialState() {
   return {
-    format: 'third_set', 
+    format: 'third_set',
     currentServer: 'team1',
-    points: { team1: 0, team2: 0 }, 
+    points: { team1: 0, team2: 0 },
     games: { team1: 0, team2: 0 },
-    sets: [], 
+    sets: [],
     isTieBreak: false,
     tieBreakPoints: { team1: 0, team2: 0 },
+    tieBreakStartServer: null,
     matchFinished: false
   };
 }
-function countSetsWon(sets) {
-  return sets.reduce(
-    (acc, s) => {
-      if (s.team1 > s.team2) acc.team1++;
-      if (s.team2 > s.team1) acc.team2++;
-      return acc;
-    },
-    { team1: 0, team2: 0 }
-  );
+
+function normalizeSet(setScore) {
+  const safe = setScore || {};
+  return {
+    team1: clampInt(safe.team1),
+    team2: clampInt(safe.team2)
+  };
 }
 
 function normalize(state) {
-  const s = { ...state };
-  s.points = s.points || { team1: 0, team2: 0 };
-  s.points.team1 = s.points.team1 ?? 0;
-  s.points.team2 = s.points.team2 ?? 0;
-  s.games = s.games || { team1: 0, team2: 0 };
-  s.games.team1 = s.games.team1 ?? 0;
-  s.games.team2 = s.games.team2 ?? 0;
-  s.sets = Array.isArray(s.sets) ? s.sets : [];
-  s.tieBreakPoints = s.tieBreakPoints || { team1: 0, team2: 0 };
-  s.tieBreakPoints.team1 = s.tieBreakPoints.team1 ?? 0;
-  s.tieBreakPoints.team2 = s.tieBreakPoints.team2 ?? 0;
-  s.isTieBreak = !!s.isTieBreak;
-  s.matchFinished = !!s.matchFinished;
-  s.currentServer = s.currentServer === 'team2' ? 'team2' : 'team1';
-  return s;
+  const safe = state || createInitialState();
+  const normalized = {
+    format: safe.format === 'super_tiebreak' ? 'super_tiebreak' : 'third_set',
+    currentServer: safe.currentServer === 'team2' ? 'team2' : 'team1',
+    points: {
+      team1: clampInt(safe.points?.team1, 0, 4),
+      team2: clampInt(safe.points?.team2, 0, 4)
+    },
+    games: {
+      team1: clampInt(safe.games?.team1),
+      team2: clampInt(safe.games?.team2)
+    },
+    sets: Array.isArray(safe.sets) ? safe.sets.map(normalizeSet) : [],
+    isTieBreak: Boolean(safe.isTieBreak),
+    tieBreakPoints: {
+      team1: clampInt(safe.tieBreakPoints?.team1),
+      team2: clampInt(safe.tieBreakPoints?.team2)
+    },
+    tieBreakStartServer: safe.tieBreakStartServer === 'team2' ? 'team2' : safe.tieBreakStartServer === 'team1' ? 'team1' : null,
+    matchFinished: Boolean(safe.matchFinished)
+  };
+
+  if (!normalized.isTieBreak) {
+    normalized.tieBreakPoints = { team1: 0, team2: 0 };
+    normalized.tieBreakStartServer = null;
+  }
+
+  return normalized;
 }
 
 function clone(state) {
   return JSON.parse(JSON.stringify(normalize(state)));
 }
 
-function otherTeam(team) {
-  return team === 'team1' ? 'team2' : 'team1';
+function countSetsWon(sets) {
+  return sets.reduce(
+    (acc, setScore) => {
+      if (setScore.team1 > setScore.team2) acc.team1 += 1;
+      if (setScore.team2 > setScore.team1) acc.team2 += 1;
+      return acc;
+    },
+    { team1: 0, team2: 0 }
+  );
+}
+
+function startTieBreak(state) {
+  const next = clone(state);
+  next.isTieBreak = true;
+  next.tieBreakPoints = { team1: 0, team2: 0 };
+  next.tieBreakStartServer = next.currentServer;
+  return next;
+}
+
+function completeMatch(state) {
+  const next = clone(state);
+  next.matchFinished = true;
+  return next;
+}
+
+function closeSet(state, winner, loserScore, viaTieBreak = false) {
+  const next = clone(state);
+  const loser = otherTeam(winner);
+
+  if (viaTieBreak) {
+    next.games[winner] = 7;
+    next.games[loser] = 6;
+  } else {
+    next.games[winner] = Math.max(next.games[winner], 6);
+    next.games[loser] = loserScore;
+  }
+
+  next.sets.push({ team1: next.games.team1, team2: next.games.team2 });
+  next.games = { team1: 0, team2: 0 };
+  next.points = { team1: 0, team2: 0 };
+  next.isTieBreak = false;
+  next.tieBreakPoints = { team1: 0, team2: 0 };
+  next.tieBreakStartServer = null;
+
+  const won = countSetsWon(next.sets);
+  if (next.format === 'third_set') {
+    if (won.team1 >= 2 || won.team2 >= 2) {
+      return completeMatch(next);
+    }
+    return next;
+  }
+
+  if (won.team1 >= 2 || won.team2 >= 2) {
+    return completeMatch(next);
+  }
+
+  if (won.team1 === 1 && won.team2 === 1) {
+    return startTieBreak(next);
+  }
+
+  return next;
+}
+
+function rotateServerAfterGame(state) {
+  const next = clone(state);
+  next.currentServer = otherTeam(next.currentServer);
+  return next;
+}
+
+function resolveGameWin(state, team) {
+  const next = clone(state);
+  next.games[team] += 1;
+  next.points = { team1: 0, team2: 0 };
+
+  const opponent = otherTeam(team);
+  const selfGames = next.games[team];
+  const opponentGames = next.games[opponent];
+
+  if (selfGames === 6 && opponentGames === 6) {
+    const rotated = rotateServerAfterGame(next);
+    return startTieBreak(rotated);
+  }
+
+  if (selfGames >= 6 && selfGames - opponentGames >= 2) {
+    const closedSet = closeSet(next, team, opponentGames, false);
+    if (!closedSet.matchFinished && !closedSet.isTieBreak) {
+      closedSet.currentServer = otherTeam(next.currentServer);
+    }
+    return closedSet;
+  }
+
+  return rotateServerAfterGame(next);
+}
+
+function getTieBreakServer(startServer, totalPointsPlayed) {
+  if (!startServer) return 'team1';
+  if (totalPointsPlayed === 0) return startServer;
+
+  const cycle = Math.floor((totalPointsPlayed - 1) / 2);
+  return cycle % 2 === 0 ? otherTeam(startServer) : startServer;
+}
+
+function resolveTieBreakPoint(state, team) {
+  const next = clone(state);
+  const opponent = otherTeam(team);
+
+  next.tieBreakPoints[team] += 1;
+
+  const target = next.format === 'super_tiebreak' && next.sets.length === 2 ? 10 : 7;
+  const self = next.tieBreakPoints[team];
+  const opp = next.tieBreakPoints[opponent];
+
+  const totalPlayed = next.tieBreakPoints.team1 + next.tieBreakPoints.team2;
+  next.currentServer = getTieBreakServer(next.tieBreakStartServer, totalPlayed);
+
+  if (self >= target && self - opp >= 2) {
+    const closedSet = closeSet(next, team, next.games[opponent], true);
+    if (!closedSet.matchFinished) {
+      closedSet.currentServer = otherTeam(next.tieBreakStartServer || next.currentServer);
+    }
+    return closedSet;
+  }
+
+  return next;
 }
 
 export function formatPoints(state, team) {
@@ -53,181 +199,78 @@ export function formatPoints(state, team) {
   if (s.isTieBreak) {
     return s.tieBreakPoints[team];
   }
-  const pSelf = s.points[team];
-  const pOpp = s.points[otherTeam(team)];
-  const table = [0, 15, 30, 40];
 
-  if (pSelf <= 3 && pOpp <= 3 && !(pSelf === 3 && pOpp === 3)) {
-    return table[pSelf];
+  const self = s.points[team];
+  const opp = s.points[otherTeam(team)];
+
+  if (self <= 3 && opp <= 3 && !(self === 3 && opp === 3)) {
+    return POINT_TABLE[self];
   }
-  if (pSelf === pOpp + 1) return '40';
-  return 40;
+
+  if (self === opp) return '40';
+  if (self > opp) return 'AD';
+  return '40';
 }
 
-function gameWon(state, team) {
-  const base = clone(state);
+export function getPointStatusLabel(state) {
+  const s = normalize(state);
+  if (s.isTieBreak) return 'Tie-break';
 
-  base.games[team] += 1;
-  base.points = { team1: 0, team2: 0 };
-
-  const gSelf = base.games[team];
-  const gOpp = base.games[otherTeam(team)];
-
-  if (gSelf === 6 && gOpp === 6) {
-    base.isTieBreak = true;
-    base.tieBreakPoints = { team1: 0, team2: 0 };
-    base.currentServer = otherTeam(base.currentServer);
-    return base;
+  const a = s.points.team1;
+  const b = s.points.team2;
+  if (a >= 3 && b >= 3) {
+    if (a === b) return 'Deuce';
+    return a > b ? 'Advantage Team 1' : 'Advantage Team 2';
   }
-
-  // 🎾 Set gagné
-  if (gSelf >= 6 && gSelf - gOpp >= 2) {
-    base.sets.push({
-      team1: base.games.team1,
-      team2: base.games.team2
-    });
-
-    // 🔥 RESET jeux après un set
-    base.games = { team1: 0, team2: 0 };
-    base.isTieBreak = false;
-    base.tieBreakPoints = { team1: 0, team2: 0 };
-
-    const setsWon = countSetsWon(base.sets);
-
-    // 🎾 FORMAT SUPER TIE-BREAK
-    if (base.format === 'super_tiebreak') {
-      if (setsWon.team1 === 1 && setsWon.team2 === 1) {
-        base.isTieBreak = true;
-        base.tieBreakPoints = { team1: 0, team2: 0 };
-        base.currentServer = otherTeam(base.currentServer);
-        return base;
-      }
-
-      if (setsWon.team1 === 2 || setsWon.team2 === 2) {
-        base.matchFinished = true;
-        return base;
-      }
-    }
-
-    // 🎾 FORMAT THIRD SET CLASSIQUE
-    if (base.format === 'third_set') {
-      if (setsWon.team1 === 2 || setsWon.team2 === 2) {
-        base.matchFinished = true;
-        return base;
-      }
-    }
-  }
-
-  // 🔁 alternance du service (toujours)
-  base.currentServer = otherTeam(base.currentServer);
-  return base;
+  return 'In game';
 }
-
-
-function handleTieBreakPoint(state, team) {
-  const next = clone(state);
-  next.tieBreakPoints[team] += 1;
-
-  const pSelf = next.tieBreakPoints[team];
-  const pOpp = next.tieBreakPoints[otherTeam(team)];
-
-  // 🎯 seuil selon le type de tie-break
-  const isSuperTieBreak =
-    next.format === 'super_tiebreak' && next.sets.length === 2;
-
-  const targetPoints = isSuperTieBreak ? 10 : 7;
-
-  // 🎾 victoire du tie-break avec 2 points d’écart
-  if (pSelf >= targetPoints && pSelf - pOpp >= 2) {
-    const base = clone(next);
-
-    // 🔥 Super tie-break = set symbolique 1–0
-    if (isSuperTieBreak) {
-      base.games =
-        team === 'team1'
-          ? { team1: 1, team2: 0 }
-          : { team1: 0, team2: 1 };
-    } else {
-      // tie-break classique → set 7–6
-      base.games[team] = 7;
-      base.games[otherTeam(team)] = 6;
-    }
-
-    // ➕ ajout du set
-    base.sets.push({
-      team1: base.games.team1,
-      team2: base.games.team2
-    });
-
-    // 🔄 reset
-    base.games = { team1: 0, team2: 0 };
-    base.points = { team1: 0, team2: 0 };
-    base.isTieBreak = false;
-    base.tieBreakPoints = { team1: 0, team2: 0 };
-
-    // 🏁 fin du match
-    base.matchFinished = true;
-    base.currentServer = otherTeam(base.currentServer);
-
-    return base;
-  }
-
-  return next;
-}
-
 
 export function incrementPoint(state, team) {
-  if (state.matchFinished) return state;
+  const s = normalize(state);
+  if (s.matchFinished || !TEAMS.includes(team)) return s;
 
-  if (state.isTieBreak) {
-    return handleTieBreakPoint(state, team);
+  if (s.isTieBreak) {
+    return resolveTieBreakPoint(s, team);
   }
 
-  const next = clone(state);
-  const self = team;
+  const next = clone(s);
   const opp = otherTeam(team);
-  let pSelf = next.points[self];
-  let pOpp = next.points[opp];
+  const pSelf = next.points[team];
+  const pOpp = next.points[opp];
 
-  // 0..3 → 15,30,40
   if (pSelf <= 2) {
-    next.points[self] = pSelf + 1;
+    next.points[team] += 1;
     return next;
   }
 
-  // pSelf == 3 (40)
   if (pSelf === 3) {
-    if (pOpp < 3) {
-      // gagne le jeu directement
-      return gameWon(next, self);
-    }
+    if (pOpp <= 2) return resolveGameWin(next, team);
     if (pOpp === 3) {
-      // passe à avantage
-      next.points[self] = 4;
+      next.points[team] = 4;
       return next;
     }
     if (pOpp === 4) {
-      // l'autre a AD → retour à égalité
       next.points[opp] = 3;
       return next;
     }
   }
 
-  // si on est déjà à AD
   if (pSelf === 4) {
-    // gagne le jeu
-    return gameWon(next, self);
+    return resolveGameWin(next, team);
   }
 
   return next;
 }
 
 export function decrementPoint(state, team) {
-  // décrémentation simple, sans revenir sur les jeux/sets déjà validés
-  const next = clone(state);
+  const s = normalize(state);
+  if (s.matchFinished || !TEAMS.includes(team)) return s;
 
+  const next = clone(s);
   if (next.isTieBreak) {
     next.tieBreakPoints[team] = Math.max(0, next.tieBreakPoints[team] - 1);
+    const totalPlayed = next.tieBreakPoints.team1 + next.tieBreakPoints.team2;
+    next.currentServer = getTieBreakServer(next.tieBreakStartServer || next.currentServer, totalPlayed);
     return next;
   }
 
@@ -235,15 +278,53 @@ export function decrementPoint(state, team) {
   return next;
 }
 
+export function applyScoreCorrection(state, correction) {
+  const base = clone(state);
+  const incoming = correction || {};
+  const updated = clone(base);
+
+  if (incoming.currentServer && TEAMS.includes(incoming.currentServer)) {
+    updated.currentServer = incoming.currentServer;
+  }
+
+  if (incoming.points) {
+    updated.points.team1 = clampInt(incoming.points.team1, 0, 4);
+    updated.points.team2 = clampInt(incoming.points.team2, 0, 4);
+  }
+
+  if (incoming.games) {
+    updated.games.team1 = clampInt(incoming.games.team1, 0, 7);
+    updated.games.team2 = clampInt(incoming.games.team2, 0, 7);
+  }
+
+  if (incoming.tieBreakPoints) {
+    updated.tieBreakPoints.team1 = clampInt(incoming.tieBreakPoints.team1);
+    updated.tieBreakPoints.team2 = clampInt(incoming.tieBreakPoints.team2);
+  }
+
+  if (typeof incoming.isTieBreak === 'boolean') {
+    updated.isTieBreak = incoming.isTieBreak;
+    if (!incoming.isTieBreak) {
+      updated.tieBreakPoints = { team1: 0, team2: 0 };
+      updated.tieBreakStartServer = null;
+    } else if (!updated.tieBreakStartServer) {
+      updated.tieBreakStartServer = updated.currentServer;
+    }
+  }
+
+  if (typeof incoming.matchFinished === 'boolean') {
+    updated.matchFinished = incoming.matchFinished;
+  }
+
+  return normalize(updated);
+}
+
 export function resetMatch() {
-  // Remet TOUT à zéro : points, jeux, sets, tie-break, matchFinished
   return createInitialState();
 }
 
 export function setFormat(state, format) {
   const next = clone(state);
-  next.format = format;
+  next.format = format === 'super_tiebreak' ? 'super_tiebreak' : 'third_set';
   return next;
 }
-
-

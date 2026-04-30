@@ -25,7 +25,7 @@ function SpectatorCourt({ terrain }) {
 
   if (!match) {
     return (
-      <div className="rounded-6xl border border-slate-800 bg-slate-900/70 p-4 text-xs text-slate-400">
+      <div className="rounded-6xl border border-slate-800 bg-slate-500/70 p-4 text-xs text-slate-400">
         Chargement du terrain {terrain.name}...
       </div>
     );
@@ -34,7 +34,7 @@ function SpectatorCourt({ terrain }) {
   const { score_state, players } = match;
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-lg shadow-black/40">
+    <div className="rounded-2xl border border-slate-800 bg-slate-500/70 p-4 shadow-lg shadow-black/40">
       <div className="mb-3 flex items-center justify-between text-xs text-slate-300">
         <span className="font-semibold">{terrain.name}</span>
         <MatchInfo scoreState={score_state} phase={match.phase} />

@@ -6,7 +6,8 @@ import {
   incrementPoint,
   decrementPoint,
   resetMatch,
-  setFormat
+  setFormat,
+  applyScoreCorrection
 } from '../services/scoreEngine.js';
 
 const MatchContext = createContext(null);
@@ -17,7 +18,9 @@ export function MatchProvider({ children }) {
   const [scoreState, setScoreState] = useState(createInitialState());
   const [players, setPlayers] = useState({ team1: '', team2: '' });
   const [phase, setPhase] = useState('');
+  const [actionError, setActionError] = useState('');
   const pollRef = useRef(null);
+  const historyRef = useRef([]);
 
   const loadMatch = async (tid) => {
     const data = await apiClient.get(`/match/${tid}`, token);
@@ -32,36 +35,65 @@ export function MatchProvider({ children }) {
     await apiClient.put(`/match/${terrainId}/score`, { score_state: newScore }, token);
   };
 
+  const pushHistory = (stateSnapshot) => {
+    historyRef.current = [...historyRef.current.slice(-39), stateSnapshot];
+  };
+
+  const commitScoreUpdate = async (builder) => {
+    try {
+      setActionError('');
+      let nextState;
+      setScoreState((prev) => {
+        pushHistory(prev);
+        nextState = builder(prev);
+        return nextState;
+      });
+      if (nextState) {
+        await saveScore(nextState);
+      }
+    } catch (e) {
+      setActionError(e?.message || 'Unable to update score');
+    }
+  };
+
   const savePlayers = async (newPlayers) => {
     if (!terrainId) return;
     await apiClient.put(`/match/${terrainId}/players`, { players: newPlayers }, token);
   };
 
   const handleIncrementPoint = async (team) => {
-    const updated = incrementPoint(scoreState, team);
-    setScoreState(updated);
-    await saveScore(updated);
+    await commitScoreUpdate((prev) => incrementPoint(prev, team));
   };
 
   const handleDecrementPoint = async (team) => {
-    const updated = decrementPoint(scoreState, team);
-    setScoreState(updated);
-    await saveScore(updated);
+    await commitScoreUpdate((prev) => decrementPoint(prev, team));
   };
 
   const handleResetMatch = async () => {
-    const updated = resetMatch();
-    setScoreState(updated);
-    await saveScore(updated);
+    await commitScoreUpdate(() => resetMatch());
     if (terrainId) {
       await loadMatch(terrainId);
     }
   };
 
   const handleSetFormat = async (format) => {
-    const updated = setFormat(scoreState, format);
-    setScoreState(updated);
-    await saveScore(updated);
+    await commitScoreUpdate((prev) => setFormat(prev, format));
+  };
+
+  const handleUndoLastAction = async () => {
+    const previous = historyRef.current[historyRef.current.length - 1];
+    if (!previous) {
+      setActionError('No previous action to undo.');
+      return;
+    }
+    historyRef.current = historyRef.current.slice(0, -1);
+    setActionError('');
+    setScoreState(previous);
+    await saveScore(previous);
+  };
+
+  const handleApplyCorrection = async (correction) => {
+    await commitScoreUpdate((prev) => applyScoreCorrection(prev, correction));
   };
 
   // Polling pour garder la page score sync avec la DB (et donc avec la vue spectateur)
@@ -86,7 +118,7 @@ export function MatchProvider({ children }) {
     };
 
     poll();
-    pollRef.current = setInterval(poll, 500); // 1s pour le superviseur (suffisant)
+    pollRef.current = setInterval(poll, 1000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
@@ -101,12 +133,15 @@ export function MatchProvider({ children }) {
         players,
         setPlayers,
         phase,
+        actionError,
         loadMatch,
         savePlayers,
         handleIncrementPoint,
         handleDecrementPoint,
         handleResetMatch,
-        handleSetFormat
+        handleSetFormat,
+        handleUndoLastAction,
+        handleApplyCorrection
       }}
     >
       {children}

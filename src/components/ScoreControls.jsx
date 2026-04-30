@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useMatch } from '../context/MatchContext.jsx';
 
 function ScoreControls() {
@@ -7,64 +7,67 @@ function ScoreControls() {
     handleDecrementPoint,
     handleResetMatch,
     handleSetFormat,
-    scoreState
+    handleUndoLastAction,
+    handleApplyCorrection,
+    scoreState,
+    actionError
   } = useMatch();
 
+  const [showCorrection, setShowCorrection] = useState(false);
+  const [manual, setManual] = useState({ games1: '', games2: '', points1: '', points2: '', tiebreak1: '', tiebreak2: '' });
+
+  const handleManualSave = async () => {
+    await handleApplyCorrection({
+      games: { team1: Number(manual.games1 || scoreState.games.team1), team2: Number(manual.games2 || scoreState.games.team2) },
+      points: { team1: Number(manual.points1 || scoreState.points.team1), team2: Number(manual.points2 || scoreState.points.team2) },
+      tieBreakPoints: { team1: Number(manual.tiebreak1 || scoreState.tieBreakPoints.team1), team2: Number(manual.tiebreak2 || scoreState.tieBreakPoints.team2) },
+      isTieBreak: scoreState.isTieBreak
+    });
+    setShowCorrection(false);
+  };
+
+  const PointButton = ({ team, label }) => (
+    <button onClick={() => handleIncrementPoint(team)} className="min-h-14 flex-1 rounded-2xl bg-gradient-to-r from-fuchsia-500 via-pink-500 to-cyan-400 px-4 py-3 text-base font-bold uppercase tracking-wide text-white shadow-lg shadow-fuchsia-800/30 active:scale-[0.99]">
+      + {label}
+    </button>
+  );
+
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-xs">
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => handleIncrementPoint('team1')}
-          className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-        >
-          + Équipe 1
-        </button>
-        <button
-          onClick={() => handleDecrementPoint('team1')}
-          className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-700"
-        >
-          - Équipe 1
-        </button>
-
-        <button
-          onClick={() => handleIncrementPoint('team2')}
-          className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-        >
-          + Équipe 2
-        </button>
-        <button
-          onClick={() => handleDecrementPoint('team2')}
-          className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-700"
-        >
-          - Équipe 2
-        </button>
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <PointButton team="team1" label="Team 1" />
+        <PointButton team="team2" label="Team 2" />
       </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={handleResetMatch}
-          className="rounded-md border border-red-500/60 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/20 transition"
-          title="Remet tous les scores à zéro (points, jeux, sets)"
-        >
-          Reset score
-        </button>
-
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-slate-400">Format :</span>
-          <select
-            value={scoreState?.format || 'third_set'}
-            onChange={(e) => handleSetFormat(e.target.value)}
-            className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-          >
-            <option value="third_set">3e set normal</option>
-            <option value="super_tiebreak">Super tie-break</option>
-          </select>
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <button onClick={() => handleDecrementPoint('team1')} className="min-h-11 rounded-xl border border-cyan-200/35 bg-cyan-500/15 px-3 py-2 text-sm font-semibold text-cyan-100">- Team 1 Point</button>
+        <button onClick={() => handleDecrementPoint('team2')} className="min-h-11 rounded-xl border border-cyan-200/35 bg-cyan-500/15 px-3 py-2 text-sm font-semibold text-cyan-100">- Team 2 Point</button>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <button onClick={handleUndoLastAction} className="min-h-10 rounded-xl border border-amber-200/40 bg-amber-500/15 px-2 py-2 text-[11px] leading-tight font-semibold text-amber-100 sm:px-3 sm:text-xs">Undo</button>
+        <button onClick={() => setShowCorrection((v) => !v)} className="min-h-10 rounded-xl border border-fuchsia-200/40 bg-fuchsia-500/15 px-2 py-2 text-[11px] leading-tight font-semibold text-fuchsia-100 sm:px-3 sm:text-xs">Edit</button>
+        <button onClick={handleResetMatch} className="min-h-10 rounded-xl border border-rose-200/45 bg-rose-500/15 px-2 py-2 text-[11px] leading-tight font-semibold text-rose-100 sm:px-3 sm:text-xs">Reset</button>
+        <select value={scoreState?.format || 'third_set'} onChange={(e) => handleSetFormat(e.target.value)} className="min-h-10 rounded-xl border border-white/20 bg-slate-950/35 px-2 py-2 text-xs font-semibold text-white">
+          <option value="third_set">Best of 3 Sets</option>
+          <option value="super_tiebreak">Super TB 3rd</option>
+        </select>
+      </div>
+      {showCorrection && (
+        <div className="rounded-2xl border border-white/20 bg-slate-950/35 p-3">
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <input placeholder="Games T1" value={manual.games1} onChange={(e) => setManual((p) => ({ ...p, games1: e.target.value }))} className="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-white placeholder:text-slate-300" />
+            <input placeholder="Games T2" value={manual.games2} onChange={(e) => setManual((p) => ({ ...p, games2: e.target.value }))} className="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-white placeholder:text-slate-300" />
+            <input placeholder="Points T1" value={manual.points1} onChange={(e) => setManual((p) => ({ ...p, points1: e.target.value }))} className="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-white placeholder:text-slate-300" />
+            <input placeholder="Points T2" value={manual.points2} onChange={(e) => setManual((p) => ({ ...p, points2: e.target.value }))} className="rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-white placeholder:text-slate-300" />
+          </div>
+          <div className="mt-2 flex gap-2">
+            <button onClick={handleManualSave} className="flex-1 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 px-3 py-2 text-xs font-semibold text-white">Save</button>
+            <button onClick={() => setShowCorrection(false)} className="flex-1 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs text-white">Cancel</button>
+          </div>
         </div>
-      </div>
+      )}
+      {actionError && <p className="text-xs text-rose-200">{actionError}</p>}
     </div>
   );
 }
 
 export default ScoreControls;
-
-
