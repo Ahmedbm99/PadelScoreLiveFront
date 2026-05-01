@@ -31,7 +31,7 @@ export default function Countdown() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
       <div className="w-full max-w-md rounded-[2rem] border border-white/15 bg-slate-950/45 p-6 shadow-2xl shadow-fuchsia-700/20 backdrop-blur-xl sm:p-8">
-        <img src="/Black png.png" alt="Padel Du Coeur Logo" className="mx-auto h-28 w-28 rounded-3xl object-cover shadow-lg shadow-cyan-500/20 sm:h-32 sm:w-32" />
+        <img src="/bloom.png" alt="Padel Du Coeur Logo" className="mx-auto h-28 w-28 rounded-3xl object-cover shadow-lg shadow-cyan-500/20 sm:h-32 sm:w-32" />
         <h1 className="mt-4 text-4xl font-extrabold text-white sm:text-5xl">Bloom Cup</h1>
         <p className="mt-1 text-sm uppercase tracking-[0.2em] text-cyan-200">Smash For A Cause</p>
 

@@ -28,7 +28,7 @@ function TeamCard({ team, name, highlightServing, scoreState }) {
     name && typeof name === 'object' && name.category ? name.category : '';
 
   return (
-    <article className={`relative overflow-hidden rounded-3xl border p-4 shadow-xl sm:p-5 ${highlightServing ? 'border-emerald-200/70 bg-emerald-300/15 shadow-emerald-700/20' : 'border-white/10 bg-white/5 shadow-fuchsia-900/20'}`}>
+    <article className={`relative overflow-hidden rounded-3xl border p-4 shadow-xl transition-all duration-300 sm:p-5 ${highlightServing ? 'border-emerald-200/70 bg-emerald-300/15 shadow-emerald-700/20' : 'border-white/10 bg-white/5 shadow-fuchsia-900/20'}`}>
       <div className="pointer-events-none absolute -top-20 right-0 h-32 w-32 rounded-full bg-cyan-300/20 blur-2xl" />
       <div className="pointer-events-none absolute -bottom-12 left-0 h-28 w-28 rounded-full bg-fuchsia-300/20 blur-2xl" />
 
@@ -38,7 +38,7 @@ function TeamCard({ team, name, highlightServing, scoreState }) {
       </div>
 
       <div className="relative mt-3 flex items-end justify-between">
-        <p className="text-5xl font-bold leading-none text-white tabular-nums sm:text-6xl">{displayScore}</p>
+        <p className="text-5xl font-bold leading-none text-white tabular-nums transition-all duration-200 ease-out sm:text-6xl">{displayScore}</p>
         <div className="text-right">
           <p className="text-[11px] uppercase tracking-wide text-slate-200/80">Sets won</p>
           <p className="text-2xl font-bold text-cyan-200 tabular-nums">{setsWon}</p>

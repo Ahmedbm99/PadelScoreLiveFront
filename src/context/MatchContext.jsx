@@ -21,6 +21,12 @@ export function MatchProvider({ children }) {
   const [actionError, setActionError] = useState('');
   const pollRef = useRef(null);
   const historyRef = useRef([]);
+  const scoreRef = useRef(scoreState);
+  const isSavingRef = useRef(false);
+
+  useEffect(() => {
+    scoreRef.current = scoreState;
+  }, [scoreState]);
 
   const loadMatch = async (tid) => {
     const data = await apiClient.get(`/match/${tid}`, token);
@@ -43,6 +49,7 @@ export function MatchProvider({ children }) {
     try {
       setActionError('');
       let nextState;
+      isSavingRef.current = true;
       setScoreState((prev) => {
         pushHistory(prev);
         nextState = builder(prev);
@@ -53,6 +60,8 @@ export function MatchProvider({ children }) {
       }
     } catch (e) {
       setActionError(e?.message || 'Unable to update score');
+    } finally {
+      isSavingRef.current = false;
     }
   };
 
@@ -96,33 +105,40 @@ export function MatchProvider({ children }) {
     await commitScoreUpdate((prev) => applyScoreCorrection(prev, correction));
   };
 
-  // Polling pour garder la page score sync avec la DB (et donc avec la vue spectateur)
-  // Note: le polling ne doit pas écraser les modifications locales en cours
   useEffect(() => {
     if (!terrainId || !token) return;
 
     const poll = async () => {
       try {
+        if (isSavingRef.current) return;
+
         const data = await apiClient.get(`/match/${terrainId}`, token);
-        // Mise à jour uniquement si le score a vraiment changé (évite les rerenders inutiles)
         const incomingScoreStr = JSON.stringify(data.score_state);
-        const currentScoreStr = JSON.stringify(scoreState);
+        const currentScoreStr = JSON.stringify(scoreRef.current);
+
         if (incomingScoreStr !== currentScoreStr) {
           setScoreState(data.score_state);
         }
-        setPlayers(data.players);
-        setPhase(data.phase || '');
+
+        setPlayers((prev) => {
+          const prevStr = JSON.stringify(prev);
+          const nextStr = JSON.stringify(data.players);
+          return prevStr === nextStr ? prev : data.players;
+        });
+
+        setPhase((prev) => (prev === (data.phase || '') ? prev : data.phase || ''));
       } catch (e) {
-        // silencieux pour ne pas gêner l'UI
+        // silent polling failure
       }
     };
 
     poll();
-    pollRef.current = setInterval(poll, 1000);
+    pollRef.current = setInterval(poll, 300);
+
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [terrainId, token, scoreState]);
+  }, [terrainId, token]);
 
   return (
     <MatchContext.Provider
@@ -150,5 +166,3 @@ export function MatchProvider({ children }) {
 }
 
 export const useMatch = () => useContext(MatchContext);
-
-

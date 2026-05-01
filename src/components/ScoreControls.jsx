@@ -27,7 +27,11 @@ function ScoreControls() {
   };
 
   const PointButton = ({ team, label }) => (
-    <button onClick={() => handleIncrementPoint(team)} className="min-h-14 flex-1 rounded-2xl bg-gradient-to-r from-fuchsia-500 via-pink-500 to-cyan-400 px-4 py-3 text-base font-bold uppercase tracking-wide text-white shadow-lg shadow-fuchsia-800/30 active:scale-[0.99]">
+    <button
+      onClick={() => handleIncrementPoint(team)}
+      className="min-h-16 flex-1 rounded-2xl bg-gradient-to-r from-fuchsia-500 via-pink-500 to-cyan-400 px-4 py-3 text-base font-bold uppercase tracking-wide text-white shadow-lg shadow-fuchsia-800/30 transition-all duration-150 ease-out active:scale-[0.97] active:shadow-md sm:min-h-[4.5rem]"
+      style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+    >
       + {label}
     </button>
   );
@@ -39,8 +43,8 @@ function ScoreControls() {
         <PointButton team="team2" label="Team 2" />
       </div>
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        <button onClick={() => handleDecrementPoint('team1')} className="min-h-11 rounded-xl border border-cyan-200/35 bg-cyan-500/15 px-3 py-2 text-sm font-semibold text-cyan-100">- Team 1 Point</button>
-        <button onClick={() => handleDecrementPoint('team2')} className="min-h-11 rounded-xl border border-cyan-200/35 bg-cyan-500/15 px-3 py-2 text-sm font-semibold text-cyan-100">- Team 2 Point</button>
+        <button onClick={() => handleDecrementPoint('team1')} className="min-h-12 rounded-xl border border-cyan-200/35 bg-cyan-500/15 px-3 py-2 text-sm font-semibold text-cyan-100 transition-all duration-150 active:scale-[0.98]" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>- Team 1 Point</button>
+        <button onClick={() => handleDecrementPoint('team2')} className="min-h-12 rounded-xl border border-cyan-200/35 bg-cyan-500/15 px-3 py-2 text-sm font-semibold text-cyan-100 transition-all duration-150 active:scale-[0.98]" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>- Team 2 Point</button>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <button onClick={handleUndoLastAction} className="min-h-10 rounded-xl border border-amber-200/40 bg-amber-500/15 px-2 py-2 text-[11px] leading-tight font-semibold text-amber-100 sm:px-3 sm:text-xs">Undo</button>

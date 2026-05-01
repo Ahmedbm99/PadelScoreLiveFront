@@ -13,7 +13,7 @@ function Header() {
     <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-slate-950/45 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-4">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <img src="/PadelScoreLiveFront/Black png.png" alt="Bloom Cup Logo" className="h-12 w-12 rounded-2xl object-cover ring-2 ring-fuchsia-300/30 sm:h-14 sm:w-14" />
+          <img src="/PadelScoreLiveFront/bloom.png" alt="Bloom Cup Logo" className="h-12 w-12 rounded-full object-cover ring-2 ring-fuchsia-300/30 sm:h-14 sm:w-14" />
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-extrabold tracking-tight text-white sm:text-3xl">BLOOM CUP</h1>
             <p className="text-[11px] uppercase tracking-wider text-cyan-200/90">Eleven Club Padel</p>
