@@ -133,7 +133,7 @@ export function MatchProvider({ children }) {
     };
 
     poll();
-    pollRef.current = setInterval(poll, 300);
+    pollRef.current = setInterval(poll, 1000);
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
